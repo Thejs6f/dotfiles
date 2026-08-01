@@ -178,7 +178,7 @@ sp() {
 ──[\D{%a, %Y-%m-%d %H:%M:%S}]\
 ──[$(cut -d" " -f1,2 /proc/loadavg 2>/dev/null)]\
 ──[$(uname -r)]\
-──[\u@\h:$(pwd)]\n\
+──[\u@\h:${PWD}]\n\
 ╰[\u@\h:\W] \
 '"$GIT_PART"'\
 $([[ $(id -u) == 0 ]] && echo "\[\e[0;31m\]")\
