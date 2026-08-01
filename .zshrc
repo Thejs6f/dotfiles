@@ -4,37 +4,40 @@ HISTSIZE=10000
 SAVEHIST=10000
 setopt appendhistory autocd notify
 unsetopt beep
+
+[[ -o interactive ]] || return
+
 bindkey -e
+
 # End of lines configured by zsh-newuser-install
 
 # Basic auto/tab complete:
-autoload -U compinit
+autoload -Uz compinit
 zstyle ':completion:*' menu select
 zmodload zsh/complist
-compinit
+compinit -C
 _comp_options+=(globdots)   # Include hidden files.
 
 # Load aliases
 [ -f "$HOME/.alias" ] && source "$HOME/.alias"
 
 function precmd {
-  local TERMWIDTH
-  (( TERMWIDTH = ${COLUMNS} - 1 ))
+  local -i TERMWIDTH promptsize pwdsize size_uname
+  (( TERMWIDTH = COLUMNS - 1 ))
  
   ###
   # Truncate the path if it's too long.
   PR_FILLBAR=""
   PR_PWDLEN=""
  
-  local promptsize=${#${(%):---(%n@%m:%l)---()--}}
-  local pwdsize=${#${(%):-%~}}
-  local unamer=$(uname -r)
-  local size_uname=${#${unamer}}
-(( promptsize = $promptsize + 29 + size_uname + 5 ))
-  if [[ "$promptsize + $pwdsize" -gt $TERMWIDTH ]]; then
-    ((PR_PWDLEN=$TERMWIDTH - $promptsize))
+  promptsize=${#${(%):---(%n@%m:%l)---()--}}
+  pwdsize=${#${(%):-%~}}
+  size_uname=${#PR_KERNEL}
+  (( promptsize = promptsize + 29 + size_uname + 5 ))
+  if (( promptsize + pwdsize > TERMWIDTH )); then
+    (( PR_PWDLEN = TERMWIDTH - promptsize ))
   else
-    PR_FILLBAR="\${(l.(($TERMWIDTH - ($promptsize + $pwdsize)))..${PR_HBAR}.)}"
+    PR_FILLBAR="\${(l.(($TERMWIDTH - (promptsize + pwdsize)))..${PR_HBAR}.)}"
   fi
 }
  
@@ -52,14 +55,15 @@ setprompt () {
   setopt prompt_subst
   ###
   # See if we can use colors.
-  autoload colors zsh/terminfo
-  if [[ "$terminfo[colors]" -ge 8 ]]; then
+  autoload -Uz colors zsh/terminfo
+  if (( ${terminfo[colors]:-0} >= 8 )); then
     colors
   fi
+  local -i count=0
   for color in RED GREEN YELLOW BLUE MAGENTA CYAN WHITE; do
     eval PR_$color='%{$terminfo[bold]$fg[${(L)color}]%}'
     eval PR_LIGHT_$color='%{$fg[${(L)color}]%}'
-    (( count = $count + 1 ))
+    (( count = count + 1 ))
   done
   PR_NO_COLOUR="%{$terminfo[sgr0]%}"
   [ $UID = 0 ] && USRPROMPT="$PR_RED#$PR_NO_COLOUR" || USRPROMPT="$PR_BLUE\$$PR_NO_COLOUR"
@@ -76,6 +80,8 @@ setprompt () {
   PR_LLCORNER=${altchar[m]:--}
   PR_LRCORNER=${altchar[j]:--}
   PR_URCORNER=${altchar[k]:--}
+  typeset -g PR_KERNEL
+  PR_KERNEL=$(uname -r)
  
 #  PR_ULCORNER="/"
 #  PR_LLCORNER="\\"
@@ -113,7 +119,7 @@ $PR_SHIFT_IN$PR_ULCORNER$PR_HBAR$PR_HBAR$PR_SHIFT_OUT\
 $PR_SHIFT_IN$PR_HBAR$PR_HBAR$PR_HBAR$PR_SHIFT_OUT\
 (%(!.%SROOT%s.%n)@%m:%l)\
 $PR_SHIFT_IN$PR_HBAR$PR_HBAR$PR_HBAR$PR_SHIFT_OUT\
-($(uname -r))\
+($PR_KERNEL)\
 \
 $PR_SHIFT_IN$PR_HBAR${(e)PR_FILLBAR}$PR_SHIFT_OUT(\
 %$PR_PWDLEN<...<%~%<<\
