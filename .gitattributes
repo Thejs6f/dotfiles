@@ -1,0 +1,7 @@
+# Ensure shell config files use LF on checkout and in the repository
+# Enforce LF for dotfiles and common shell script extensions
+.bashrc text eol=lf
+.zshrc text eol=lf
+.config/fish/** text eol=lf
+*.fish text eol=lf
+*.sh text eol=lf
